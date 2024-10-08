@@ -50,6 +50,11 @@ class TextBarController extends GetxController {
     isTextFieldEmpty.value = input.trim().isEmpty;
   }
 
+  void onMessageChanged(String message) {
+    updateMessage(message); // Update the message
+    updateTextFieldStatus(message); // Check if the text field is empty or not
+  }
+
   Future<void> sendMessage({String? phone}) async {
     print("messge++++++++++++${message.value}");
     if (message.value.isNotEmpty) {
@@ -327,6 +332,20 @@ class TextBarController extends GetxController {
     }
   }
 
+  void onLongPressHandler() async {
+    // Only start recording if permission has already been granted
+    if (await _audioRecorder.hasPermission()) {
+      startRecording();
+    } else {
+      errorMessage.value = 'Microphone permission denied or not requested.';
+    }
+  }
+
+  void onTapHandler() async {
+    // Request permission separately before allowing recording on long press
+    await checkAndRequestPermission();
+  }
+
   Future<void> startRecording() async {
     if (kIsWeb) {
       errorMessage.value = 'Audio recording is not supported on web.';
@@ -363,40 +382,73 @@ class TextBarController extends GetxController {
     }
   }
 
-  void onLongPressHandler() async {
-    // Only start recording if permission has already been granted
-    if (await _audioRecorder.hasPermission()) {
-      startRecording();
-    } else {
-      errorMessage.value = 'Microphone permission denied or not requested.';
-    }
-  }
-
-  void onTapHandler() async {
-    // Request permission separately before allowing recording on long press
-    await checkAndRequestPermission();
-  }
-
-  Future<void> stopRecording(String? phone) async {
+  Future<void> stopRecording() async {
     if (!isRecording.value) return;
 
     try {
       final path = await _audioRecorder.stop();
       if (path != null) {
-        filePath.value = path;
+        filePath.value = path; // Assign the file path for the recorded audio
         isRecording.value = false;
 
-        // Cancel the timer
-        _timer?.cancel();
-
-        // Convert MP3 to OGG format
-        String oggPath = await convertToOgg(filePath.value);
-
-        // Upload the converted OGG file
-        await uploadRecordedAudio(File(oggPath), phone!);
+        // The file path is set, and now the user can review and decide to delete or send the audio
       }
+      _timer?.cancel();
     } catch (e) {
       errorMessage.value = 'Failed to stop recording: $e';
+    }
+  }
+
+  Future<void> playAudio(String audioFilePath) async {
+    try {
+      isPlaying.value = true;
+      await _audioPlayer.setFilePath(audioFilePath);
+      _audioPlayer.play();
+    } catch (e) {
+      errorMessage.value = 'Failed to play audio: $e';
+    }
+  }
+
+  Future<void> stopAudio() async {
+    try {
+      await _audioPlayer.stop();
+      isPlaying.value = false;
+    } catch (e) {
+      errorMessage.value = 'Failed to stop audio: $e';
+    }
+  }
+
+  void deleteRecordedAudio() {
+    if (filePath.value.isNotEmpty) {
+      try {
+        // Delete the audio file from the system if it exists
+        File(filePath.value).deleteSync();
+        filePath.value = ''; // Clear the file path
+        isRecording.value = false; // Reset recording status
+        errorMessage.value = 'Recorded audio has been deleted.';
+      } catch (e) {
+        errorMessage.value = 'Failed to delete audio: $e';
+      }
+    } else {
+      errorMessage.value = 'No audio recorded to delete.';
+    }
+  }
+
+// Sending the recorded audio file
+  Future<void> sendRecordedAudio(String? phone) async {
+    try {
+      if (filePath.value.isNotEmpty) {
+        // Convert the recorded file to OGG format before uploading
+        String oggPath = await convertToOgg(filePath.value);
+
+        // Send the converted OGG audio file
+        await uploadRecordedAudio(File(oggPath), phone);
+        errorMessage.value = 'Audio sent successfully.';
+      } else {
+        errorMessage.value = 'No audio file to send.';
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to send audio: $e';
     }
   }
 
@@ -440,46 +492,12 @@ class TextBarController extends GetxController {
   }
 
   // Audio playback (works across platforms)
-  Future<void> playAudio(String audioFilePath) async {
-    try {
-      isPlaying.value = true;
-      await _audioPlayer.setFilePath(audioFilePath);
-      _audioPlayer.play();
-    } catch (e) {
-      errorMessage.value = 'Failed to play audio: $e';
-    }
-  }
-
-  Future<void> stopAudio() async {
-    try {
-      await _audioPlayer.stop();
-      isPlaying.value = false;
-      // _timer?.cancel();
-    } catch (e) {
-      errorMessage.value = 'Failed to stop audio: $e';
-    }
-  }
-
-  void deleteRecordedAudio() {
-    if (filePath.value.isNotEmpty) {
-      try {
-        // Delete the audio file from the system if it exists
-        File(filePath.value).deleteSync();
-        filePath.value = ''; // Clear the file path
-        isRecording.value = false; // Reset recording status
-        errorMessage.value = 'Recorded audio has been deleted.';
-      } catch (e) {
-        errorMessage.value = 'Failed to delete audio: $e';
-      }
-    } else {
-      errorMessage.value = 'No audio recorded to delete.';
-    }
-  }
 
   // Clear audio data
   void onClear() {
     filePath.value = '';
     errorMessage.value = '';
+    stopRecording();
   }
 
   @override

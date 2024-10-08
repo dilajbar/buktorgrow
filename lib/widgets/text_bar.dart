@@ -1,8 +1,8 @@
-import 'package:buktorgrow/controller/chat_controller.dart';
 import 'package:buktorgrow/widgets/icon_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:voice_message_package/voice_message_package.dart';
 
 import '../controller/textbar_controller.dart';
 
@@ -13,6 +13,8 @@ class TextBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextBarController controller = Get.put(TextBarController());
+    final FocusNode _focusNode = FocusNode();
+    controller.checkAndRequestPermission();
 
     return Container(
       decoration: const BoxDecoration(
@@ -64,18 +66,17 @@ class TextBar extends StatelessWidget {
                             ),
                           ),
                         );
-                      } else {
+                      } else if (!controller.isRecording.value &&
+                          controller.filePath.isEmpty) {
                         return Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: TextFormField(
                               controller: controller.chatmessageController,
+                              focusNode: _focusNode,
                               minLines: 1,
                               maxLines: 5,
-                              onChanged: (text) {
-                                controller.updateMessage;
-                                controller.updateTextFieldStatus(text);
-                              },
+                              onChanged: controller.onMessageChanged,
                               decoration: InputDecoration(
                                 hintText: 'Type a message',
                                 hintStyle: GoogleFonts.aBeeZee(fontSize: 14),
@@ -108,8 +109,10 @@ class TextBar extends StatelessWidget {
                                   children: [
                                     IconButton(
                                       onPressed: () {
+                                        _focusNode.requestFocus();
                                         _showIconPopup(
                                             context, phone.toString());
+                                        _focusNode.unfocus();
                                       },
                                       icon: Icon(
                                         Icons.attach_file_outlined,
@@ -122,7 +125,9 @@ class TextBar extends StatelessWidget {
                                         color: Colors.grey.shade600,
                                       ),
                                       onPressed: () {
+                                        _focusNode.requestFocus();
                                         controller.openCamera(phone);
+                                        _focusNode.unfocus();
                                       },
                                     ),
                                   ],
@@ -132,6 +137,52 @@ class TextBar extends StatelessWidget {
                             ),
                           ),
                         );
+                      } else if (controller.filePath.isNotEmpty &&
+                          !controller.isRecording()) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              iconSize: 28,
+                              icon: const CircleAvatar(
+                                  child: Center(
+                                      child: Icon(Icons.delete,
+                                          color: Colors.black))),
+                              onPressed: () async {
+                                controller.deleteRecordedAudio();
+                              },
+                            ),
+                            VoiceMessageView(
+                              //size: ,
+                              activeSliderColor: Colors.green,
+                              circlesColor: Colors.black,
+                              controller: VoiceController(
+                                maxDuration: const Duration(minutes: 5),
+                                isFile: true,
+                                audioSrc: controller.filePath.value,
+                                onComplete: () {},
+                                onPause: () {},
+                                onPlaying: () {},
+                                onError: (err) {},
+                              ),
+                              innerPadding: 12,
+                              cornerRadius: 20,
+                            ),
+                            IconButton(
+                              iconSize: 28,
+                              icon: const CircleAvatar(
+                                  child: Center(
+                                      child: Icon(Icons.send,
+                                          color: Colors.black))),
+                              onPressed: () async {
+                                await controller.sendRecordedAudio(phone);
+                              },
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Container();
                       }
                     }),
                     const SizedBox(width: 5),
@@ -163,7 +214,7 @@ class TextBar extends StatelessWidget {
                             }
                           },
                           onLongPressUp: () {
-                            controller.stopRecording(phone);
+                            controller.stopRecording();
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
