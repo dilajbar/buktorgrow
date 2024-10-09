@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:get/get.dart';
@@ -21,7 +24,7 @@ class VideoplayerBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final videoController = Get.put(VideoController());
-
+     
     return Align(
       alignment: isSentByUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -45,23 +48,26 @@ class VideoplayerBubble extends StatelessWidget {
             GetX<VideoController>(
               initState: (_) {
                 // Only initialize if it's not already initialized
-                if (!videoController.isInitialized.value) {
+               // if (!videoController.isInitialized.value) {
                   videoController.initialize(videourl);
-                }
+                //}
               },
               builder: (_) {
                 if (videoController.isInitialized.value) {
                   return AspectRatio(
                     aspectRatio:
-                        videoController.videoPlayerController.value.aspectRatio,
+                        16/9,
                     child: Stack(
                       children: [
-                        VideoPlayer(videoController.videoPlayerController),
+                         VideoPlayer(videoController.videoPlayerController),
+                        // Chewie(
+                        //   controller: videoController.chewieController,
+                        // ),
                         Center(
                           child: IconButton(
                             onPressed: videoController.playPause,
                             icon: Icon(
-                              videoController.isPlaying.value
+                             ( videoController.isPlaying.value)
                                   ? Icons.pause
                                   : Icons.play_circle,
                               color: Colors.white,

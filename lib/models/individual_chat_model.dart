@@ -70,10 +70,12 @@ class Data {
 class ChatThread {
   String? type;
   LastChat? value;
+  bool isLoading;
 
   ChatThread({
     this.type,
     this.value,
+    this.isLoading = false
   });
 
   factory ChatThread.fromJson(Map<String, dynamic> json) => ChatThread(

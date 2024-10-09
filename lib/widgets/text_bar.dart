@@ -13,7 +13,7 @@ class TextBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextBarController controller = Get.put(TextBarController());
-    final FocusNode _focusNode = FocusNode();
+    final FocusNode focusNode = FocusNode();
     controller.checkAndRequestPermission();
 
     return Container(
@@ -38,6 +38,7 @@ class TextBar extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Obx(() {
                       if (controller.isRecording.value) {
@@ -73,7 +74,7 @@ class TextBar extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: TextFormField(
                               controller: controller.chatmessageController,
-                              focusNode: _focusNode,
+                              focusNode: focusNode,
                               minLines: 1,
                               maxLines: 5,
                               onChanged: controller.onMessageChanged,
@@ -109,10 +110,10 @@ class TextBar extends StatelessWidget {
                                   children: [
                                     IconButton(
                                       onPressed: () {
-                                        _focusNode.requestFocus();
+                                        focusNode.requestFocus();
                                         _showIconPopup(
                                             context, phone.toString());
-                                        _focusNode.unfocus();
+                                        focusNode.unfocus();
                                       },
                                       icon: Icon(
                                         Icons.attach_file_outlined,
@@ -125,9 +126,9 @@ class TextBar extends StatelessWidget {
                                         color: Colors.grey.shade600,
                                       ),
                                       onPressed: () {
-                                        _focusNode.requestFocus();
+                                        focusNode.requestFocus();
                                         controller.openCamera(phone);
-                                        _focusNode.unfocus();
+                                        focusNode.unfocus();
                                       },
                                     ),
                                   ],
@@ -139,53 +140,59 @@ class TextBar extends StatelessWidget {
                         );
                       } else if (controller.filePath.isNotEmpty &&
                           !controller.isRecording()) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              iconSize: 28,
-                              icon: const CircleAvatar(
-                                  child: Center(
-                                      child: Icon(Icons.delete,
-                                          color: Colors.black))),
-                              onPressed: () async {
-                                controller.deleteRecordedAudio();
-                              },
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  iconSize: 28,
+                                  icon: const CircleAvatar(
+                                      child: Center(
+                                          child: Icon(Icons.delete,
+                                              color: Colors.black))),
+                                  onPressed: () async {
+                                    controller.deleteRecordedAudio();
+                                  },
+                                ),
+                                VoiceMessageView(
+                                  //size: ,
+                                  activeSliderColor: Colors.green,
+                                  circlesColor: Colors.black,
+                                  controller: VoiceController(
+                                    maxDuration: const Duration(minutes: 5),
+                                    isFile: true,
+                                    audioSrc: controller.filePath.value,
+                                    onComplete: () {},
+                                    onPause: () {},
+                                    onPlaying: () {},
+                                    onError: (err) {},
+                                  ),
+                                  innerPadding: 12,
+                                  cornerRadius: 20,
+                                ),
+                                IconButton(
+                                  iconSize: 28,
+                                  icon: controller.isVoiceSending.value? const CircularProgressIndicator(): const CircleAvatar(
+                                      child: Center(
+                                          child: Icon(Icons.send,
+                                              color: Colors.black))),
+                                  onPressed: () async {
+                                    await controller.sendRecordedAudio(phone);
+                                  },
+                                ),
+                              ],
                             ),
-                            VoiceMessageView(
-                              //size: ,
-                              activeSliderColor: Colors.green,
-                              circlesColor: Colors.black,
-                              controller: VoiceController(
-                                maxDuration: const Duration(minutes: 5),
-                                isFile: true,
-                                audioSrc: controller.filePath.value,
-                                onComplete: () {},
-                                onPause: () {},
-                                onPlaying: () {},
-                                onError: (err) {},
-                              ),
-                              innerPadding: 12,
-                              cornerRadius: 20,
-                            ),
-                            IconButton(
-                              iconSize: 28,
-                              icon: const CircleAvatar(
-                                  child: Center(
-                                      child: Icon(Icons.send,
-                                          color: Colors.black))),
-                              onPressed: () async {
-                                await controller.sendRecordedAudio(phone);
-                              },
-                            ),
-                          ],
+                          ),
                         );
                       } else {
                         return Container();
                       }
                     }),
                     const SizedBox(width: 5),
+                 if(controller.filePath.value.isEmpty)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,

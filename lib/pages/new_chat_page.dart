@@ -122,7 +122,7 @@ class ChatPage extends StatelessWidget {
                     final delivered = message.value?.status == 'delivered';
                     final mediaUrl = message.value?.media?.path;
                     final mediatype = message.value?.media?.type;
-
+                          log("media url : $mediaUrl");
                     // Format the timestamp as needed
                     final formattedTime = timestamp != null
                         ? DateFormat('h:mm a').format(timestamp.toLocal())
@@ -135,43 +135,43 @@ class ChatPage extends StatelessWidget {
                           mediatype == "application/ogg" ||
                           mediatype == "audio/mpeg") {
                         // Use the VoiceMessage widget to play the voice message
-                        messageWidget = const SizedBox.shrink();
-                        // messageWidget = Column(
-                        //   crossAxisAlignment: CrossAxisAlignment.start,
-                        //   children: [
-                        //     VoiceMessageView(
-                        //       circlesColor: Colors.green,
-                        //       playPauseButtonLoadingColor: Colors.green,
-                        //       activeSliderColor: Colors.green,
-                        //       controller: VoiceController(
-                        //         audioSrc: mediaUrl,
-                        //         onComplete: () {
-                        //           log('Voice message completed');
-                        //         },
-                        //         onPause: () {
-                        //           log('Voice message paused');
-                        //         },
-                        //         onPlaying: () {
-                        //           log('Voice message is playing');
-                        //         },
-                        //         onError: (err) {
-                        //           log(mediaUrl);
-                        //           log('Error playing voice message: $err');
-                        //           Fluttertoast.showToast(
-                        //             msg: "Error playing voice message",
-                        //             toastLength: Toast.LENGTH_SHORT,
-                        //             backgroundColor: Colors.grey,
-                        //             textColor: Colors.white,
-                        //           );
-                        //         },
-                        //         maxDuration: const Duration(minutes: 2),
-                        //         isFile: false,
-                        //       ),
-                        //       innerPadding: 12,
-                        //       cornerRadius: 20,
-                        //     ),
-                        //   ],
-                        // );
+                       // messageWidget = const SizedBox.shrink();
+                        messageWidget = Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            VoiceMessageView(
+                              circlesColor: Colors.green,
+                              playPauseButtonLoadingColor: Colors.green,
+                              activeSliderColor: Colors.green,
+                              controller: VoiceController(
+                                audioSrc: mediaUrl,
+                                onComplete: () {
+                                  log('Voice message completed');
+                                },
+                                onPause: () {
+                                  log('Voice message paused');
+                                },
+                                onPlaying: () {
+                                  log('Voice message is playing');
+                                },
+                                onError: (err) {
+                                  log(mediaUrl);
+                                  log('Error playing voice message: $err');
+                                  Fluttertoast.showToast(
+                                    msg: "Error playing voice message",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    backgroundColor: Colors.grey,
+                                    textColor: Colors.white,
+                                  );
+                                },
+                                maxDuration: const Duration(minutes: 2),
+                                isFile: false,
+                              ),
+                              innerPadding: 12,
+                              cornerRadius: 20,
+                            ),
+                          ],
+                        );
                       } else if (mediatype == "video/mp4") {
                         // messageWidget = const SizedBox.shrink();
                         messageWidget = VideoplayerBubble(

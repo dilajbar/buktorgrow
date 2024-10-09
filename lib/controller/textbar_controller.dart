@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
+import 'package:buktorgrow/controller/new_chat_controller.dart';
+import 'package:buktorgrow/models/individual_chat_model.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_session.dart';
 import 'package:flutter/foundation.dart';
@@ -55,10 +57,24 @@ class TextBarController extends GetxController {
     updateTextFieldStatus(message); // Check if the text field is empty or not
   }
 
-  Future<void> sendMessage({String? phone}) async {
+  Future<void> sendMessage({
+    String? phone,
+  }) async {
+    NewChatController newChatController = Get.find<NewChatController>();
+
     print("messge++++++++++++${message.value}");
     if (message.value.isNotEmpty) {
       log('Sending message: ${message.value}');
+
+      // send to local list
+
+      newChatController.newMessages.value
+          .add(ChatThread(value: LastChat(
+            type: 'inbound',
+            metadata: Metadata(
+            text: TextMetadata(body: message.value)
+          ))));
+
       var response = await MessageSendService()
           .sendMessage(message: message.value, phone: phone);
       if (response == true) {
@@ -434,15 +450,25 @@ class TextBarController extends GetxController {
     }
   }
 
-// Sending the recorded audio file
+  // Sending the recorded audio file
+  var isVoiceSending = false.obs;
+
   Future<void> sendRecordedAudio(String? phone) async {
+    isVoiceSending.value = true;
+    update();
     try {
       if (filePath.value.isNotEmpty) {
         // Convert the recorded file to OGG format before uploading
         String oggPath = await convertToOgg(filePath.value);
 
         // Send the converted OGG audio file
-        await uploadRecordedAudio(File(oggPath), phone);
+        await uploadRecordedAudio(File(oggPath), phone).then(
+          (value) {
+            onClear();
+            isVoiceSending.value = false;
+            update();
+          },
+        );
         errorMessage.value = 'Audio sent successfully.';
       } else {
         errorMessage.value = 'No audio file to send.';

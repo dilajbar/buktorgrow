@@ -22,6 +22,8 @@ class NewChatController extends GetxController {
     });
   }
 
+  RxList<ChatThread> newMessages = <ChatThread>[].obs;
+
   Future<void> fetchChatData(int pageKey) async {
     try {
       final response = await ChatService().individualchat(
@@ -31,7 +33,7 @@ class NewChatController extends GetxController {
       );
 
       if (response != null && response.data != null) {
-        final newMessages = response.data!.chatThread ?? [];
+         newMessages.value = response.data!.chatThread ?? [];
         final isLastPage = newMessages.length < _pageSize;
 
         if (isLastPage) {
