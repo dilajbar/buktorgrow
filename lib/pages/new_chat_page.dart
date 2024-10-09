@@ -109,166 +109,173 @@ class ChatPage extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
               ),
-              child: PagedListView<int, ChatThread>(
-                reverse: true,
-                pagingController: chatcontroller.pagingController,
-                builderDelegate: PagedChildBuilderDelegate<ChatThread>(
-                  itemBuilder: (context, message, index) {
-                    final isSentByUser = message.value?.type == 'outbound';
-                    final metaData = message.value?.metadata;
-                    final body = metaData!.text;
-                    final timestamp = message.value?.createdAt;
-                    final status = message.value?.status == 'read';
-                    final delivered = message.value?.status == 'delivered';
-                    final mediaUrl = message.value?.media?.path;
-                    final mediatype = message.value?.media?.type;
-                          log("media url : $mediaUrl");
-                    // Format the timestamp as needed
-                    final formattedTime = timestamp != null
-                        ? DateFormat('h:mm a').format(timestamp.toLocal())
-                        : '';
-                    // Check if the message contains media
-                    Widget messageWidget;
-
-                    if (mediaUrl != null && mediaUrl.isNotEmpty) {
-                      if (mediatype == "audio/ogg" ||
-                          mediatype == "application/ogg" ||
-                          mediatype == "audio/mpeg") {
-                        // Use the VoiceMessage widget to play the voice message
-                       // messageWidget = const SizedBox.shrink();
-                        messageWidget = Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            VoiceMessageView(
-                              circlesColor: Colors.green,
-                              playPauseButtonLoadingColor: Colors.green,
-                              activeSliderColor: Colors.green,
-                              controller: VoiceController(
-                                audioSrc: mediaUrl,
-                                onComplete: () {
-                                  log('Voice message completed');
-                                },
-                                onPause: () {
-                                  log('Voice message paused');
-                                },
-                                onPlaying: () {
-                                  log('Voice message is playing');
-                                },
-                                onError: (err) {
-                                  log(mediaUrl);
-                                  log('Error playing voice message: $err');
-                                  Fluttertoast.showToast(
-                                    msg: "Error playing voice message",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    backgroundColor: Colors.grey,
-                                    textColor: Colors.white,
-                                  );
-                                },
-                                maxDuration: const Duration(minutes: 2),
-                                isFile: false,
+              child: Obx(
+                
+                (){
+                  return PagedListView<int, ChatThread>(
+                  reverse: true,
+                  pagingController: chatcontroller.pagingController,
+                  builderDelegate: PagedChildBuilderDelegate<ChatThread>(
+                    itemBuilder: (context, message, index) {
+                      final isSentByUser = message.value?.type == 'outbound';
+                      final metaData = message.value?.metadata;
+                      final body = metaData!.text;
+                  
+                      final timestamp = message.value?.createdAt;
+                      final status = message.value?.status == 'read';
+                      final delivered = message.value?.status == 'delivered';
+                      final mediaUrl = message.value?.media?.path;
+                      final mediatype = message.value?.media?.type;
+                            log("media url : $mediaUrl");
+                      // Format the timestamp as needed
+                      final formattedTime = timestamp != null
+                          ? DateFormat('h:mm a').format(timestamp.toLocal())
+                          : '';
+                      // Check if the message contains media
+                      Widget messageWidget;
+                
+                      if (mediaUrl != null && mediaUrl.isNotEmpty) {
+                        if (mediatype == "audio/ogg" ||
+                            mediatype == "application/ogg" ||
+                            mediatype == "audio/mpeg") {
+                          // Use the VoiceMessage widget to play the voice message
+                         // messageWidget = const SizedBox.shrink();
+                          messageWidget = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              VoiceMessageView(
+                                circlesColor: Colors.green,
+                                playPauseButtonLoadingColor: Colors.green,
+                                activeSliderColor: Colors.green,
+                                controller: VoiceController(
+                                  audioSrc: mediaUrl,
+                                  onComplete: () {
+                                    log('Voice message completed');
+                                  },
+                                  onPause: () {
+                                    log('Voice message paused');
+                                  },
+                                  onPlaying: () {
+                                    log('Voice message is playing');
+                                  },
+                                  onError: (err) {
+                                    log(mediaUrl);
+                                    log('Error playing voice message: $err');
+                                    Fluttertoast.showToast(
+                                      msg: "Error playing voice message",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      backgroundColor: Colors.grey,
+                                      textColor: Colors.white,
+                                    );
+                                  },
+                                  maxDuration: const Duration(minutes: 2),
+                                  isFile: false,
+                                ),
+                                innerPadding: 12,
+                                cornerRadius: 20,
                               ),
-                              innerPadding: 12,
-                              cornerRadius: 20,
-                            ),
-                          ],
-                        );
-                      } else if (mediatype == "video/mp4") {
-                        // messageWidget = const SizedBox.shrink();
-                        messageWidget = VideoplayerBubble(
-                          videourl: mediaUrl,
-                          isSentByUser: isSentByUser,
+                            ],
+                          );
+                        } else if (mediatype == "video/mp4") {
+                          // messageWidget = const SizedBox.shrink();
+                          messageWidget = VideoplayerBubble(
+                            videourl: mediaUrl,
+                            isSentByUser: isSentByUser,
+                            seen: isSentByUser ? status : false,
+                            delivered: isSentByUser ? delivered : false,
+                          );
+                        } else {
+                          messageWidget = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                child: Stack(
+                                  children: [
+                                    // The image displayed inside the BubbleNormalImage
+                                    BubbleNormalImage(
+                                      id: 'id$index',
+                                      image: CachedNetworkImage(
+                                        imageUrl: mediaUrl,
+                                        placeholder: (context, url) =>
+                                            Shimmer.fromColors(
+                                          baseColor: Colors.grey[300]!,
+                                          highlightColor: Colors.grey[100]!,
+                                          child: Container(
+                                            width: double.infinity,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(Icons.error),
+                                        fit: BoxFit.cover,
+                                      ),
+                                      color: CustomColors().primaryColor,
+                                      tail: true,
+                                      seen: isSentByUser ? status : false,
+                                      delivered: isSentByUser ? delivered : false,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      } else if (body != null) {
+                        // Display text if there's no media
+                        messageWidget = BubbleSpecialThree(
+                          text: body.body.toString(),
+                          isSender: isSentByUser,
+                          color:
+                              isSentByUser ? Colors.green.shade400 : Colors.white,
+                          tail: true,
                           seen: isSentByUser ? status : false,
                           delivered: isSentByUser ? delivered : false,
+                          textStyle: TextStyle(
+                            fontSize: 16,
+                            color: isSentByUser ? Colors.white : Colors.black,
+                          ),
                         );
                       } else {
-                        messageWidget = Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // If both media and body are null, return an empty widget
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        child: Column(
+                          crossAxisAlignment: isSentByUser
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              child: Stack(
-                                children: [
-                                  // The image displayed inside the BubbleNormalImage
-                                  BubbleNormalImage(
-                                    id: 'id$index',
-                                    image: CachedNetworkImage(
-                                      imageUrl: mediaUrl,
-                                      placeholder: (context, url) =>
-                                          Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: Container(
-                                          width: double.infinity,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          const Icon(Icons.error),
-                                      fit: BoxFit.cover,
-                                    ),
-                                    color: CustomColors().primaryColor,
-                                    tail: true,
-                                    seen: isSentByUser ? status : false,
-                                    delivered: isSentByUser ? delivered : false,
-                                  ),
-                                ],
+                            messageWidget,
+                            const SizedBox(height: 2),
+                            Text(
+                              formattedTime,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
                               ),
                             ),
                           ],
-                        );
-                      }
-                    } else if (body != null) {
-                      // Display text if there's no media
-                      messageWidget = BubbleSpecialThree(
-                        text: body.body.toString(),
-                        isSender: isSentByUser,
-                        color:
-                            isSentByUser ? Colors.green.shade400 : Colors.white,
-                        tail: true,
-                        seen: isSentByUser ? status : false,
-                        delivered: isSentByUser ? delivered : false,
-                        textStyle: TextStyle(
-                          fontSize: 16,
-                          color: isSentByUser ? Colors.white : Colors.black,
                         ),
                       );
-                    } else {
-                      // If both media and body are null, return an empty widget
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      child: Column(
-                        crossAxisAlignment: isSentByUser
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                        children: [
-                          messageWidget,
-                          const SizedBox(height: 2),
-                          Text(
-                            formattedTime,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  firstPageProgressIndicatorBuilder: (_) => const Center(
-                      child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator())),
-                  newPageProgressIndicatorBuilder: (_) => const Center(
-                      child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator())),
-                  noItemsFoundIndicatorBuilder: (_) =>
-                      const Center(child: SizedBox.shrink()),
-                ),
+                    },
+                    firstPageProgressIndicatorBuilder: (_) => const Center(
+                        child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator())),
+                    newPageProgressIndicatorBuilder: (_) => const Center(
+                        child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator())),
+                    noItemsFoundIndicatorBuilder: (_) =>
+                        const Center(child: SizedBox.shrink()),
+                  ),
+                );
+                }
+               
               ),
             ),
           ),

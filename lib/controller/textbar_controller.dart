@@ -7,6 +7,7 @@ import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as path;
 
@@ -60,6 +61,8 @@ class TextBarController extends GetxController {
   Future<void> sendMessage({
     String? phone,
   }) async {
+
+    log("sending text message  : ${message.value}");
     NewChatController newChatController = Get.find<NewChatController>();
 
     print("messge++++++++++++${message.value}");
@@ -68,12 +71,13 @@ class TextBarController extends GetxController {
 
       // send to local list
 
-      newChatController.newMessages.value
-          .add(ChatThread(value: LastChat(
+      newChatController.insertLocalMessage(ChatThread(value: LastChat(
             type: 'inbound',
             metadata: Metadata(
-            text: TextMetadata(body: message.value)
+            text: TextMetadata(body: message.value),
+            timestamp: DateFormat().format(DateTime.now())
           ))));
+       
 
       var response = await MessageSendService()
           .sendMessage(message: message.value, phone: phone);

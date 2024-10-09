@@ -9,11 +9,12 @@ import '../models/individual_chat_model.dart';
 
 class NewChatController extends GetxController {
   RxString lastScene = ''.obs; // Fixed naming convention
-  static const _pageSize = 10;
 
-  final PagingController<int, ChatThread> pagingController =
+ final PagingController<int, ChatThread> pagingController =
       PagingController(firstPageKey: 1);
   final chatData = Rx<Data>(Data());
+  final RxList<ChatThread> newMessages = <ChatThread>[].obs;
+  final int _pageSize = 20;
   late final String contactId;
 
   NewChatController(this.contactId) {
@@ -21,8 +22,6 @@ class NewChatController extends GetxController {
       fetchChatData(pageKey);
     });
   }
-
-  RxList<ChatThread> newMessages = <ChatThread>[].obs;
 
   Future<void> fetchChatData(int pageKey) async {
     try {
@@ -33,25 +32,38 @@ class NewChatController extends GetxController {
       );
 
       if (response != null && response.data != null) {
-         newMessages.value = response.data!.chatThread ?? [];
-        final isLastPage = newMessages.length < _pageSize;
+        final fetchedMessages = response.data!.chatThread ?? [];
+        final isLastPage = fetchedMessages.length < _pageSize;
 
+        // Append data to PagingController
         if (isLastPage) {
-          pagingController.appendLastPage(newMessages);
+          pagingController.appendLastPage(fetchedMessages);
         } else {
           final nextPageKey = pageKey + _pageSize;
-          pagingController.appendPage(newMessages, nextPageKey);
+          pagingController.appendPage(fetchedMessages, nextPageKey);
+        }
+
+        // Update the reactive newMessages list
+        if (pageKey == 1) {
+          newMessages.assignAll(fetchedMessages); // Replace with new data
+        } else {
+          newMessages.addAll(fetchedMessages); // Append new data
         }
 
         // Update chatData
         chatData.value = response.data!;
       } else {
-        pagingController.appendLastPage([]);
+        pagingController.appendLastPage([]); // Handle empty or last page
       }
     } catch (error) {
-      pagingController.error = error; // Handle error
-      log('Error fetching chat data: $error'); // Logging error
+      pagingController.error = error; // Handle error in PagingController
+      log('Error fetching chat data: $error');
     }
+  }
+
+  // Method to insert a local message and instantly update the UI
+  void insertLocalMessage(ChatThread message) {
+    newMessages.insert(0, message); // Insert at the top of the list
   }
 
   String formatDate(DateTime? date) {
